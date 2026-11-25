@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#08080b">
+<title>ECLIPSE 75 — Механическая клавиатура нового поколения</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08080b;--ink:#f2f2f5;--muted:#8b8b99;--accent:#8b5cf6;--accent2:#c4b5fd;--line:rgba(255,255,255,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif}
+::selection{background:var(--accent);color:#fff}
+#stage{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#poster{position:absolute;inset:0;background:radial-gradient(60% 50% at 70% 40%,rgba(139,92,246,.28),transparent 70%),radial-gradient(50% 40% at 20% 80%,rgba(99,102,241,.16),transparent 70%),linear-gradient(180deg,#0a0a10 0%,#08080b 100%)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:1}
+#vignette{position:absolute;inset:0;background:radial-gradient(120% 100% at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%)}
+nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:22px clamp(20px,4vw,56px);background:linear-gradient(180deg,rgba(8,8,11,.85),transparent)}
+.logo{font-family:'Space Grotesk';font-weight:700;letter-spacing:.14em;font-size:15px}.logo span{color:var(--accent)}
+.nav-cta{font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;padding:10px 20px;border:1px solid var(--line);border-radius:100px;backdrop-filter:blur(10px);background:rgba(255,255,255,.04);transition:border-color .3s,background .3s}
+.nav-cta:hover{border-color:var(--accent);background:rgba(139,92,246,.12)}
+.hero{position:relative;z-index:2;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:0 clamp(20px,6vw,90px);pointer-events:none}
+.hero>*{pointer-events:auto;max-width:640px}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent2);margin-bottom:26px;font-weight:600}
+.eyebrow:before{content:"";width:34px;height:1px;background:var(--accent)}
+.hero h1{font-size:clamp(52px,9.5vw,124px);line-height:.94;font-weight:700;letter-spacing:-.03em;margin-bottom:28px}
+.hero h1 em,.final h2 em{font-style:normal;background:linear-gradient(100deg,var(--accent2) 0%,var(--accent) 55%,#6366f1 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{font-size:clamp(16px,1.6vw,19px);line-height:1.65;color:var(--muted);max-width:460px;margin-bottom:40px}
+.btn{display:inline-flex;align-items:center;gap:12px;font-family:'Space Grotesk';font-weight:600;font-size:15px;color:#0b0b10;background:linear-gradient(100deg,var(--accent2),var(--accent));padding:17px 34px;border-radius:100px;border:none;cursor:pointer;box-shadow:0 8px 40px rgba(139,92,246,.45),0 0 0 1px rgba(255,255,255,.15) inset;transition:transform .3s,box-shadow .3s;text-decoration:none;width:fit-content}
+.btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 55px rgba(139,92,246,.6)}
+.scroll-hint{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:12px}
+.scroll-hint:after{content:"";width:1px;height:44px;background:linear-gradient(180deg,var(--accent),transparent);animation:drip 2s ease-in-out infinite}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}55%{transform:scaleY(1);transform-origin:top}56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+.story{position:relative;z-index:2;height:340vh}
+.story-inner{position:sticky;top:0;height:100svh;display:flex;align-items:center;padding:0 clamp(20px,6vw,90px)}
+.chapters{position:relative;width:min(420px,86vw);height:300px}
+.chapter{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;opacity:0;transform:translateY(30px);transition:opacity .25s,transform .25s;pointer-events:none}
+.chapter.active{opacity:1;transform:translateY(0)}
+.chapter .num{font-family:'Space Grotesk';font-size:13px;color:var(--accent);letter-spacing:.2em;margin-bottom:16px;font-weight:600}
+.chapter h2{font-size:clamp(30px,4vw,46px);line-height:1.05;letter-spacing:-.02em;margin-bottom:18px}
+.chapter p{color:var(--muted);line-height:1.7;font-size:16px}
+.progress-rail{position:absolute;right:clamp(20px,5vw,70px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:3}
+.progress-rail i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.18);transition:.3s}
+.progress-rail i.on{background:var(--accent);box-shadow:0 0 12px var(--accent)}
+section.block{position:relative;z-index:2;background:linear-gradient(180deg,transparent,rgba(8,8,11,.92) 12%,rgba(8,8,11,.96))}
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(80px,12vh,140px) clamp(20px,5vw,48px)}
+.sec-head{margin-bottom:56px}.sec-head .eyebrow{margin-bottom:18px}.sec-head h2{font-size:clamp(34px,5vw,58px);letter-spacing:-.02em;line-height:1.05}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+.card{border:1px solid var(--line);border-radius:22px;padding:32px 28px;background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.012));backdrop-filter:blur(14px);transition:transform .35s,border-color .35s,background .35s}
+.card:hover{transform:translateY(-8px);border-color:rgba(139,92,246,.5);background:linear-gradient(160deg,rgba(139,92,246,.1),rgba(255,255,255,.02))}
+.card .ico{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:rgba(139,92,246,.14);border:1px solid rgba(139,92,246,.3);margin-bottom:22px}
+.card .ico svg{width:22px;height:22px;stroke:var(--accent2);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.card h3{font-size:19px;margin-bottom:12px;letter-spacing:-.01em}.card p{color:var(--muted);font-size:14.5px;line-height:1.65}
+.variants{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.swatch{display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 22px 12px 12px;border-radius:100px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-family:'Space Grotesk';font-size:14px;font-weight:500;color:var(--ink);transition:.3s}
+.swatch .dot{width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.swatch:hover{border-color:rgba(139,92,246,.5)}.swatch.on{border-color:var(--accent);background:rgba(139,92,246,.13);box-shadow:0 0 24px rgba(139,92,246,.25)}
+.variant-note{margin-top:22px;color:var(--muted);font-size:14px}
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.spec{padding:28px 26px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);background:rgba(255,255,255,.015)}
+.spec dt{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}.spec dd{font-family:'Space Grotesk';font-size:17px;font-weight:500}.spec dd small{display:block;color:var(--muted);font-family:'Inter';font-size:12.5px;margin-top:5px;font-weight:400}
+.final{text-align:center}.final h2{font-size:clamp(40px,7vw,88px);letter-spacing:-.03em;line-height:1;margin-bottom:24px}.final p{color:var(--muted);margin-bottom:44px;font-size:17px}
+footer{position:relative;z-index:2;border-top:1px solid var(--line);padding:34px clamp(20px,5vw,48px);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:13px;background:rgba(8,8,11,.9)}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}.reveal.visible{opacity:1;transform:translateY(0)}
+@media(max-width:720px){.hero{justify-content:flex-end;padding-bottom:16svh}.hero>*{max-width:100%}.story-inner{align-items:flex-start;padding-top:14svh}.chapters{height:340px}.progress-rail,.scroll-hint{display:none}.hero h1{font-size:clamp(48px,13vw,76px)}#vignette{background:radial-gradient(100% 80% at 55% 40%,transparent 35%,rgba(0,0,0,.65) 100%)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Dedicated product viewport: the model occupies its own visual column. */
+#stage{inset:0 0 0 auto;left:40%;width:60%;height:100svh;z-index:1;opacity:1;background:radial-gradient(ellipse at 58% 48%,rgba(103,72,190,.23),transparent 58%),linear-gradient(115deg,rgba(8,8,15,.02),rgba(17,14,30,.18));transition:opacity .45s ease}
+#poster{background:radial-gradient(58% 48% at 58% 48%,rgba(139,92,246,.19),transparent 72%),radial-gradient(38% 38% at 72% 70%,rgba(75,85,180,.12),transparent 72%),linear-gradient(180deg,rgba(10,10,16,.08),rgba(8,8,11,.12))}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:1;z-index:1}
+#stage:before{content:"";position:absolute;z-index:2;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(8,8,11,.92) 0%,rgba(8,8,11,.34) 18%,transparent 42%)}
+#vignette{z-index:2;pointer-events:none;background:radial-gradient(90% 85% at 56% 45%,transparent 46%,rgba(0,0,0,.4) 100%)}
+.stage-ui{position:absolute;z-index:3;inset:0;pointer-events:none;color:rgba(242,242,245,.62);font-family:'Space Grotesk',sans-serif}
+.stage-brand{position:absolute;top:104px;right:clamp(24px,4vw,58px);font-size:11px;letter-spacing:.2em;font-weight:700;color:rgba(242,242,245,.76)}
+.stage-brand span{color:var(--accent2)}
+.stage-brand small{display:block;margin-top:7px;font:500 9px 'Inter',sans-serif;letter-spacing:.22em;color:rgba(242,242,245,.36)}
+.stage-status{position:absolute;right:clamp(24px,4vw,58px);bottom:76px;display:flex;align-items:center;gap:9px;font:600 10px 'Inter',sans-serif;letter-spacing:.16em;color:rgba(242,242,245,.56)}
+.stage-status i{width:6px;height:6px;border-radius:50%;background:var(--accent2);box-shadow:0 0 12px var(--accent);animation:livePulse 1.8s ease-in-out infinite}
+.stage-scroll{position:absolute;right:clamp(24px,4vw,58px);bottom:42px;font:500 9px 'Inter',sans-serif;letter-spacing:.2em;color:rgba(242,242,245,.32)}
+.stage-scroll b{color:var(--accent2);font-size:13px;margin-left:9px}
+@keyframes livePulse{50%{opacity:.35;box-shadow:0 0 3px var(--accent)}}
+.hero{z-index:3;}
+.hero>*{max-width:560px}
+.story{z-index:3;}
+.story-inner{z-index:3;}
+.story .chapters{width:min(440px,86vw)}
+.story .chapter{transition:opacity .42s ease,transform .52s cubic-bezier(.2,.8,.2,1)}
+section.block{z-index:3}
+#colors{background:linear-gradient(180deg,rgba(8,8,11,.80),rgba(8,8,11,.28) 35%,rgba(8,8,11,.18));}
+#colors .wrap{min-height:88svh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+#colors .sec-head,#colors .variants,#colors .variant-note{width:min(510px,100%);}
+#colors .sec-head{margin-bottom:38px}
+.swatch{position:relative;min-height:52px;padding-left:14px;padding-right:22px}
+.swatch .dot{flex:0 0 26px}
+.swatch:focus-visible{outline:2px solid var(--accent2);outline-offset:4px}
+.swatch.on:after{content:"✓";font:700 12px 'Inter',sans-serif;color:var(--accent2);margin-left:2px}
+.variant-note{min-height:22px}
+@media(max-width:720px){
+  #stage{left:0;right:0;top:0;width:100%;height:52svh;opacity:.94}
+  #stage:before{background:linear-gradient(180deg,rgba(8,8,11,.05) 0%,transparent 52%,rgba(8,8,11,.88) 100%)}
+  #poster{background:radial-gradient(75% 70% at 50% 42%,rgba(139,92,246,.23),transparent 72%),linear-gradient(180deg,rgba(10,10,16,.03),rgba(8,8,11,.1))}
+  #vignette{background:radial-gradient(100% 90% at 50% 42%,transparent 40%,rgba(0,0,0,.34) 100%)}
+  .stage-ui{display:none}
+  .hero{padding-top:48svh;padding-bottom:10svh;justify-content:flex-end;min-height:100svh}
+  .hero>*{max-width:100%}
+  .story-inner{padding-top:49svh;align-items:flex-start}
+  .chapters{height:340px;width:100%}
+  #colors .wrap{min-height:100svh;padding-top:50svh;justify-content:flex-start}
+  #colors .sec-head{margin-bottom:28px}
+}
+@media(prefers-reduced-motion:reduce){.stage-status i{animation:none}}
+
+</style>
+</head>
+<body>
+<div id="stage" aria-hidden="true">
+  <div id="poster"></div>
+  <canvas id="gl"></canvas>
+  <div id="vignette"></div>
+  <div class="stage-ui">
+    <div class="stage-brand">ECLIPSE<span>·75</span><small>MECHANICAL / 75%</small></div>
+    <div class="stage-status"><i></i><span id="stage-status">LIVE 3D PRODUCT VIEW</span></div>
+    <div class="stage-scroll">SCROLL TO EXPLORE <b>↓</b></div>
+  </div>
+</div>
+<nav><div class="logo">ECLIPSE<span>·75</span></div><a class="nav-cta" href="#final">Заказать</a></nav>
+<header class="hero" id="top">
+  <div class="eyebrow">Gasket-mount · Hot-swap · Tri-mode</div>
+  <h1>Клавиатура,<br>которая <em>звучит</em><br>как музыка.</h1>
+  <p>ECLIPSE 75 — 75% механическая клавиатура с газкет-маунтом, хот-свопом и переключателями, подобранными под ваш характер набора.</p>
+  <a class="btn" href="#story">Смотреть вблизи <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 4v16m0 0l-6-6m6 6l6-6"/></svg></a>
+  <div class="scroll-hint">Scroll</div>
+</header>
+<section class="story" id="story">
+  <div class="story-inner">
+    <div class="chapters">
+      <div class="chapter active" id="ch1"><div class="num">01 / МАТЕРИАЛЫ</div><h2>Капы из PBT.<br>Даблшот-легенда.</h2><p>Текстурные PBT-кейкапы с двухслойным литьём не стираются годами и не блестят — даже на WASD после тысячи часов.</p></div>
+      <div class="chapter" id="ch2"><div class="num">02 / КОНСТРУКЦИЯ</div><h2>Gasket-маунт.<br>Мягче, глуше, приятнее.</h2><p>Плата «плавает» на прокладках: ни дребезга, ни пустого стука. Только глубокий, собранный звук — как у хорошего инструмента.</p></div>
+      <div class="chapter" id="ch3"><div class="num">03 / СВЕТ</div><h2>Per-key RGB.<br>Южный LED-обвод.</h2><p>Каждая клавиша — свой источник света с южной ориентацией диодов: легенды читаются идеально, подсветка — ровной волной.</p></div>
+    </div>
+    <div class="progress-rail"><i class="on"></i><i></i><i></i></div>
+  </div>
+</section>
+<section class="block"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Возможности</div><h2>Собрана до<br>последнего винта.</h2></div>
+  <div class="cards">
+    <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 17l6-10 4 6 2-3 4 7H4z"/><circle cx="17" cy="6" r="2"/></svg></div><h3>Hot-swap 3/5-pin</h3><p>Меняйте свитчи без пайки за пару минут: съёмник, новый свитч — и другой характер набора.</p></div>
+    <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="5"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg></div><h3>Tri-mode связь</h3><p>2.4 ГГц, Bluetooth 5.1 и USB-C — до трёх устройств в памяти. Переключение одним переключателем.</p></div>
+    <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1m0-12.8l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.5"/></svg></div><h3>Knob и программирование</h3><p>Многофункциональный энкодер и поддержка QMK/VIA: любой слой, любой макрос — под ваш рабочий процесс.</p></div>
+    <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 0-5 5v.2A4 4 0 0 0 7 16h1"/><rect x="10" y="14" width="4" height="6" rx="1.5"/><path d="M17 8h1a3 3 0 0 1 0 6h-1"/></svg></div><h3>Акустический сэндвич</h3><p>Многослойная шумоизоляция помогает убрать лишний резонанс и сделать звук набора более собранным.</p></div>
+  </div>
+</div></section>
+<section class="block" id="colors"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Цветовые версии</div><h2>Выберите свой характер.</h2></div>
+  <div class="variants reveal" id="swatches" aria-label="Выбор цвета клавиатуры"></div><div class="variant-note reveal" id="variant-note" aria-live="polite">Выберите цвет — модель обновится в реальном времени.</div>
+</div></section>
+<section class="block"><div class="wrap">
+  <div class="sec-head reveal"><div class="eyebrow">Спецификация</div><h2>Технические<br>характеристики.</h2></div>
+  <dl class="specs reveal">
+    <div class="spec"><dt>Формат</dt><dd>75%<small>84 клавиши + энкодер</small></dd></div>
+    <div class="spec"><dt>Монтаж</dt><dd>Gasket mount<small>эластичные прокладки</small></dd></div>
+    <div class="spec"><dt>Свитчи</dt><dd>Hot-swap<small>3-pin / 5-pin, без пайки</small></dd></div>
+    <div class="spec"><dt>Кейкапы</dt><dd>PBT double-shot<small>Cherry-профиль</small></dd></div>
+    <div class="spec"><dt>ПО</dt><dd>QMK / VIA<small>перенастройка клавиш и слоёв</small></dd></div>
+    <div class="spec"><dt>Подсветка</dt><dd>Per-key RGB<small>индивидуальная подсветка</small></dd></div>
+    <div class="spec"><dt>Подключение</dt><dd>Tri-mode<small>2.4 ГГц · Bluetooth · USB-C</small></dd></div>
+    <div class="spec"><dt>Цена</dt><dd>Уточняется<small>доступность — по предзаказу</small></dd></div>
+  </dl>
+</div></section>
+<section class="block final" id="final"><div class="wrap"><h2 class="reveal">Набирайте<br>так, как <em>слышите</em>.</h2><p class="reveal">ECLIPSE 75 уже ждёт предзаказ. Первой партией — с ограниченной раскладкой кейкапов.</p><a class="btn reveal" href="#top">Оформить предзаказ <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14m0 0l-6-6m6 6l-6 6"/></svg></a></div></section>
+<footer><div>© 2026 ECLIPSE Lab</div><div>3D-модель клавиатуры создаётся прямо в браузере — Three.js.</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('gl');
+  const stage = document.getElementById('stage');
+  const story = document.getElementById('story');
+  const hero = document.querySelector('.hero');
+  const colorsSection = document.getElementById('colors');
+  const chapterEls = [...document.querySelectorAll('.chapter')];
+  const railDots = [...document.querySelectorAll('.progress-rail i')];
+  const statusEl = document.getElementById('stage-status');
+  const noteEl = document.getElementById('variant-note');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const PALETTES = [
+    { name:'Phantom', swatch:'#1b1b22', case:0x222230, cap:0x444455, capAlt:0x333344, accent:0x8b5cf6, glow:0x8b5cf6, css:'#8b5cf6', css2:'#c4b5fd' },
+    { name:'Arctic', swatch:'#e8e8ee', case:0xcfd0d8, cap:0xf2f2f6, capAlt:0xd9dae2, accent:0x6366f1, glow:0x6366f1, css:'#6366f1', css2:'#c7d2fe' },
+    { name:'Ultraviolet', swatch:'linear-gradient(135deg,#8b5cf6,#312e81)', case:0x23222e, cap:0x8b5cf6, capAlt:0x6d28d9, accent:0xf5f3ff, glow:0xa78bfa, css:'#a78bfa', css2:'#e9d5ff' }
+  ];
+
+  const KEY_ROWS = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1.65],
+    [1.45,1,1,1,1,1,1,1,1,1,1,1,1.55],
+    [1.7,1,1,1,1,1,1,1,1,1,1,2.25],
+    [2.15,1,1,1,1,1,1,1,1,1,2.65],
+    [1.25,1.25,1.25,6.25,1.25,1.25,1.25,1.25]
+  ];
+
+  let renderer, scene, camera, keyboard, clock;
+  let animationId = 0;
+  let contextLost = false;
+  let currentProgress = 0;
+  let targetProgress = 0;
+  let activeChapter = -1;
+  let mouseX = 0, mouseY = 0;
+  let selectedPalette = PALETTES[0];
+  let materials = null;
+  let ledMeshes = [];
+  let currentStageOpacity = 1;
+  let statusCache = '';
+
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const smooth = (a, b, x) => {
+    const t = clamp((x - a) / (b - a), 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  function createMaterials() {
+    return {
+      case: new THREE.MeshStandardMaterial({ color:0x222230, metalness:0.42, roughness:0.34 }),
+      cap: new THREE.MeshStandardMaterial({ color:0x444455, metalness:0.06, roughness:0.43 }),
+      capAlt: new THREE.MeshStandardMaterial({ color:0x333344, metalness:0.08, roughness:0.40 }),
+      accent: new THREE.MeshStandardMaterial({ color:0x8b5cf6, metalness:0.18, roughness:0.3, emissive:0x8b5cf6, emissiveIntensity:0.25 }),
+      plate: new THREE.MeshStandardMaterial({ color:0x12121a, metalness:0.78, roughness:0.28 }),
+      switch: new THREE.MeshStandardMaterial({ color:0x20202a, metalness:0.12, roughness:0.62 }),
+      gasket: new THREE.MeshStandardMaterial({ color:0x8b5cf6, metalness:0.05, roughness:0.82 }),
+      trim: new THREE.MeshStandardMaterial({ color:0x77778b, metalness:0.82, roughness:0.25 }),
+      legend: new THREE.MeshBasicMaterial({ color:0xdeddec, transparent:true, opacity:0.82 }),
+      glow: new THREE.MeshBasicMaterial({ color:0x8b5cf6, transparent:true, opacity:0.28, toneMapped:false })
+    };
+  }
+
+  function addBox(parent, width, height, depth, material, position) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
+    mesh.position.set(position[0], position[1], position[2]);
+    parent.add(mesh);
+    return mesh;
+  }
+
+  function addGaskets(parent) {
+    const g = new THREE.Group();
+    const m = materials.gasket;
+    addBox(g, 6.72, 0.085, 0.105, m, [0, 0.045, -1.30]);
+    addBox(g, 6.72, 0.085, 0.105, m, [0, 0.045, 1.30]);
+    addBox(g, 0.105, 0.085, 2.48, m, [-3.34, 0.045, 0]);
+    addBox(g, 0.105, 0.085, 2.48, m, [3.34, 0.045, 0]);
+    parent.add(g);
+    return g;
+  }
+
+  function makeKeyboard() {
+    const root = new THREE.Group();
+    ledMeshes = [];
+
+    // Lower shell and a separate floating plate assembly form a visible gasket-mount construction.
+    const lowerShell = new THREE.Mesh(new THREE.BoxGeometry(7.65, 0.72, 3.05), materials.case);
+    lowerShell.position.y = -0.39;
+    root.add(lowerShell);
+
+    const lowerTrim = new THREE.Mesh(new THREE.BoxGeometry(7.52, 0.035, 2.92), materials.trim);
+    lowerTrim.position.y = -0.755;
+    root.add(lowerTrim);
+
+    const underglow = new THREE.Mesh(new THREE.BoxGeometry(7.43, 0.025, 2.82), materials.glow);
+    underglow.position.y = -0.785;
+    root.add(underglow);
+    root.userData.underglow = underglow;
+
+    // Small feet make the case read as a physical object from side angles.
+    [-3.0, 3.0].forEach(x => [-1.12, 1.12].forEach(z => {
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.13, 0.42), materials.switch);
+      foot.position.set(x, -0.80, z);
+      root.add(foot);
+    }));
+
+    const gaskets = addGaskets(root);
+    root.userData.gaskets = gaskets;
+
+    const plateAssembly = new THREE.Group();
+    plateAssembly.position.y = 0.09;
+    root.add(plateAssembly);
+    root.userData.plateAssembly = plateAssembly;
+
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(7.34, 0.095, 2.77), materials.plate);
+    plateAssembly.add(plate);
+
+    const keyGroup = new THREE.Group();
+    plateAssembly.add(keyGroup);
+
+    const unit = 0.455;
+    const keyGap = 0.045;
+    const capGeometryCache = new Map();
+    KEY_ROWS.forEach((widths, rowIndex) => {
+      const total = widths.reduce((sum, width) => sum + width, 0);
+      let x = -total * unit / 2;
+      widths.forEach((width, keyIndex) => {
+        const keyWidth = Math.max(0.20, width * unit - keyGap);
+        const depth = 0.39;
+        const z = (rowIndex - 2) * 0.535;
+        const isAccent = (rowIndex === 2 && keyIndex === 0) || (rowIndex === 3 && keyIndex === 0) || (rowIndex === 4 && (keyIndex === 0 || keyIndex === 7));
+        const useAlt = rowIndex === 0 || (rowIndex === 1 && keyIndex >= widths.length - 2);
+
+        // Individual switch housings, keycaps, subtle legends and per-key light bars.
+        const housing = new THREE.Mesh(new THREE.BoxGeometry(keyWidth * 0.82, 0.14, 0.31), materials.switch);
+        housing.position.set(x + width * unit / 2, 0.105, z);
+        keyGroup.add(housing);
+
+        const geometryKey = keyWidth.toFixed(3);
+        let capGeometry = capGeometryCache.get(geometryKey);
+        if (!capGeometry) {
+          capGeometry = new THREE.BoxGeometry(keyWidth, 0.18, depth);
+          capGeometryCache.set(geometryKey, capGeometry);
+        }
+        const cap = new THREE.Mesh(capGeometry, isAccent ? materials.accent : (useAlt ? materials.capAlt : materials.cap));
+        cap.position.set(x + width * unit / 2, 0.275, z);
+        cap.userData.baseY = cap.position.y;
+        cap.userData.phase = rowIndex * 1.7 + keyIndex * 0.73;
+        keyGroup.add(cap);
+
+        const legend = new THREE.Mesh(new THREE.BoxGeometry(Math.min(0.14, keyWidth * 0.38), 0.008, 0.018), materials.legend);
+        legend.position.set(cap.position.x, 0.369, z - 0.015);
+        keyGroup.add(legend);
+
+        const ledMaterial = new THREE.MeshBasicMaterial({ color:selectedPalette.glow, transparent:true, opacity:0.22, toneMapped:false });
+        const led = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.12, keyWidth - 0.10), 0.018, 0.025), ledMaterial);
+        led.position.set(cap.position.x, 0.18, z + 0.192);
+        keyGroup.add(led);
+        ledMeshes.push({ mesh:led, material:ledMaterial, index:ledMeshes.length });
+
+        x += width * unit;
+      });
+    });
+
+    // Encoder with a metallic rim and an illuminated top.
+    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.25, 40), materials.capAlt);
+    knob.position.set(3.28, 0.16, -1.05);
+    root.add(knob);
+    const knobTop = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.165, 0.06, 40), materials.accent);
+    knobTop.position.set(3.28, 0.315, -1.05);
+    root.add(knobTop);
+    const knobRing = new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.018, 8, 40), materials.trim);
+    knobRing.rotation.x = Math.PI / 2;
+    knobRing.position.set(3.28, 0.30, -1.05);
+    root.add(knobRing);
+    root.userData.knob = knobTop;
+
+    // Four fasteners make the top plate and case details easier to read in close-up.
+    [-3.45, 3.45].forEach(x => [-1.28, 1.28].forEach(z => {
+      const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.025, 16), materials.trim);
+      screw.position.set(x, -0.005, z);
+      root.add(screw);
+    }));
+
+    return root;
+  }
+
+  function applyPalette(palette) {
+    selectedPalette = palette;
+    if (!materials) return;
+    materials.case.color.setHex(palette.case);
+    materials.cap.color.setHex(palette.cap);
+    materials.capAlt.color.setHex(palette.capAlt);
+    materials.accent.color.setHex(palette.accent);
+    materials.accent.emissive.setHex(palette.accent);
+    materials.gasket.color.setHex(palette.accent);
+    materials.glow.color.setHex(palette.glow);
+    ledMeshes.forEach(({material}) => material.color.setHex(palette.glow));
+    document.documentElement.style.setProperty('--accent', palette.css);
+    document.documentElement.style.setProperty('--accent2', palette.css2);
+    if (noteEl) noteEl.textContent = `Выбрана версия ${palette.name}. Цвет корпуса, кейкапов и подсветки обновлён на 3D-модели.`;
+  }
+
+  function initializeScene() {
+    if (!window.THREE || !canvas || !stage) {
+      console.error('[ECLIPSE] Three.js не загрузился. Проверь подключение к CDN.');
+      return false;
+    }
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, powerPreference:'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setClearColor(0x000000, 0);
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.22;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+      camera.position.set(0, 5.4, 14.2);
+      camera.lookAt(0, 0, 0);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 1.15));
+      scene.add(new THREE.HemisphereLight(0xe4ddff, 0x282333, 1.25));
+      const keyLight = new THREE.DirectionalLight(0xfff0df, 2.35);
+      keyLight.position.set(4, 9, 8);
+      scene.add(keyLight);
+      const fillLight = new THREE.DirectionalLight(0x8792ff, 1.5);
+      fillLight.position.set(-7, 4, 5);
+      scene.add(fillLight);
+      const rimLight = new THREE.DirectionalLight(0x9867ff, 2.1);
+      rimLight.position.set(-2, 5, -7);
+      scene.add(rimLight);
+
+      materials = createMaterials();
+      keyboard = makeKeyboard();
+      keyboard.position.set(0, -0.04, 0);
+      keyboard.rotation.set(-0.28, -0.18, 0);
+      scene.add(keyboard);
+
+      clock = new THREE.Clock();
+      resize();
+      return true;
+    } catch (error) {
+      console.error('[ECLIPSE] Ошибка создания 3D-сцены:', error);
+      return false;
+    }
+  }
+
+  function readScrollProgress() {
+    const rect = story.getBoundingClientRect();
+    const distance = Math.max(1, story.offsetHeight - window.innerHeight);
+    return clamp(-rect.top / distance, 0, 1);
+  }
+
+  function updateStoryUI(progress) {
+    const index = Math.min(2, Math.floor(Math.min(progress, 0.999999) * 3));
+    if (index !== activeChapter) {
+      activeChapter = index;
+      chapterEls.forEach((el, i) => el.classList.toggle('active', i === index));
+      railDots.forEach((dot, i) => dot.classList.toggle('on', i === index));
+    }
+  }
+
+  function cameraState(progress) {
+    // Distinct product-shooting angles for each chapter: keycap close-up, side construction, RGB top view.
+    const stops = [
+      { p:0.00, pos:[0,5.4,14.2], look:[0,0,0], rot:[-0.28,-0.18,0] },
+      { p:0.30, pos:[1.4,7.3,12.0], look:[0,0.08,0], rot:[-0.47,0.30,0] },
+      { p:0.66, pos:[-8.1,4.0,10.8], look:[0,0.02,0], rot:[-0.12,1.05,0] },
+      { p:1.00, pos:[0.8,8.0,12.8], look:[0,0.02,0], rot:[-0.43,1.78,0] }
+    ];
+    let left = stops[0], right = stops[1];
+    for (let i=0; i<stops.length-1; i++) {
+      if (progress >= stops[i].p && progress <= stops[i+1].p) {
+        left = stops[i]; right = stops[i+1]; break;
+      }
+      if (progress > stops[stops.length-1].p) { left = stops[2]; right = stops[3]; }
+    }
+    const t = smooth(left.p, right.p, progress);
+    const v = (a, b) => lerp(a, b, t);
+    return {
+      pos:[v(left.pos[0],right.pos[0]),v(left.pos[1],right.pos[1]),v(left.pos[2],right.pos[2])],
+      look:[v(left.look[0],right.look[0]),v(left.look[1],right.look[1]),v(left.look[2],right.look[2])],
+      rot:[v(left.rot[0],right.rot[0]),v(left.rot[1],right.rot[1]),v(left.rot[2],right.rot[2])]
+    };
+  }
+
+  function sectionIntersects(element) {
+    const r = element.getBoundingClientRect();
+    return r.bottom > 0 && r.top < window.innerHeight;
+  }
+
+  function updateStageDisplay(progress) {
+    const onHero = sectionIntersects(hero);
+    const onStory = sectionIntersects(story);
+    const onColors = sectionIntersects(colorsSection);
+    const desiredOpacity = (onHero || onStory || onColors) ? 1 : 0.055;
+    currentStageOpacity += (desiredOpacity - currentStageOpacity) * 0.055;
+    stage.style.opacity = currentStageOpacity.toFixed(3);
+
+    let label = 'ECLIPSE 75 · PRODUCT VIEW';
+    if (onColors) label = 'COLOR STUDIO · LIVE PREVIEW';
+    else if (onStory) label = ['01 / PBT KEYCAPS','02 / GASKET CONSTRUCTION','03 / PER-KEY RGB'][Math.min(2,Math.floor(Math.min(progress,0.999999)*3))];
+    if (label !== statusCache && statusEl) {
+      statusCache = label;
+      statusEl.textContent = label;
+    }
+  }
+
+  function updateModel(progress, elapsed) {
+    const state = cameraState(progress);
+    camera.position.set(state.pos[0], state.pos[1], state.pos[2]);
+    camera.lookAt(state.look[0], state.look[1], state.look[2]);
+
+    const pointerSway = reducedMotion ? 0 : mouseX * 0.055;
+    keyboard.rotation.set(
+      state.rot[0] + (reducedMotion ? 0 : -mouseY * 0.025),
+      state.rot[1] + pointerSway + (reducedMotion ? 0 : Math.sin(elapsed * 0.28) * 0.025),
+      state.rot[2]
+    );
+
+    // During chapter 02 the top plate and keys lift away from the lower case, exposing gasket pads.
+    const explodeIn = smooth(0.36, 0.49, progress);
+    const explodeOut = 1 - smooth(0.62, 0.73, progress);
+    const exploded = explodeIn * explodeOut;
+    keyboard.userData.plateAssembly.position.y = 0.09 + exploded * (reducedMotion ? 0.32 : 0.48);
+
+    if (!reducedMotion) {
+      keyboard.position.y = -0.04 + Math.sin(elapsed * 0.9) * 0.025;
+      keyboard.userData.knob.rotation.y = elapsed * 0.55;
+      const rgbPower = smooth(0.68, 0.84, progress);
+      materials.glow.opacity = 0.22 + rgbPower * 0.58;
+      materials.accent.emissiveIntensity = 0.22 + rgbPower * 0.5;
+      const base = new THREE.Color(selectedPalette.glow);
+      const cycling = new THREE.Color();
+      ledMeshes.forEach(({material,index}) => {
+        const hue = (index / Math.max(1,ledMeshes.length) + elapsed * 0.055) % 1;
+        cycling.setHSL(hue, 0.78, 0.58);
+        material.color.copy(base).lerp(cycling, rgbPower * 0.88);
+        material.opacity = 0.18 + rgbPower * 0.76;
+      });
+    } else {
+      keyboard.position.y = -0.04;
+      materials.glow.opacity = 0.26;
+    }
+  }
+
+  function animate() {
+    animationId = requestAnimationFrame(animate);
+    if (!renderer || !scene || !camera || !keyboard || contextLost) return;
+    const elapsed = clock.getElapsedTime();
+    targetProgress = readScrollProgress();
+    currentProgress += (targetProgress - currentProgress) * (reducedMotion ? 1 : 0.065);
+    if (Math.abs(targetProgress-currentProgress) < 0.0005) currentProgress = targetProgress;
+
+    updateModel(currentProgress, elapsed);
+    updateStoryUI(currentProgress);
+    updateStageDisplay(currentProgress);
+    try {
+      renderer.render(scene, camera);
+    } catch (error) {
+      console.error('[ECLIPSE] Ошибка WebGL-рендеринга:', error);
+    }
+  }
+
+  function resize() {
+    if (!renderer || !camera) return;
+    const rect = stage.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+    camera.aspect = width / height;
+    camera.fov = window.matchMedia('(max-width: 720px)').matches ? 42 : 38;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+  }
+
+  function mountSwatches() {
+    const wrap = document.getElementById('swatches');
+    if (!wrap) return;
+    PALETTES.forEach((palette, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'swatch' + (index === 0 ? ' on' : '');
+      button.setAttribute('aria-pressed', index === 0 ? 'true' : 'false');
+      button.innerHTML = `<span class="dot" style="background:${palette.swatch}"></span><span>${palette.name}</span>`;
+      button.addEventListener('click', () => {
+        wrap.querySelectorAll('.swatch').forEach(item => {
+          item.classList.remove('on');
+          item.setAttribute('aria-pressed','false');
+        });
+        button.classList.add('on');
+        button.setAttribute('aria-pressed','true');
+        applyPalette(palette);
+      });
+      wrap.appendChild(button);
+    });
+  }
+
+  function mountReveals() {
+    const items = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window)) {
+      items.forEach(item => item.classList.add('visible'));
+      return;
+    }
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold:0.1 });
+    items.forEach(item => observer.observe(item));
+  }
+
+  canvas.addEventListener('webglcontextlost', event => {
+    event.preventDefault();
+    contextLost = true;
+    console.error('[ECLIPSE] Потерян WebGL-контекст.');
+  }, false);
+  canvas.addEventListener('webglcontextrestored', () => {
+    contextLost = false;
+    resize();
+    console.info('[ECLIPSE] WebGL-контекст восстановлен.');
+  }, false);
+
+  window.addEventListener('resize', resize, { passive:true });
+  window.addEventListener('pointermove', event => {
+    mouseX = event.clientX / Math.max(1,window.innerWidth) - 0.5;
+    mouseY = event.clientY / Math.max(1,window.innerHeight) - 0.5;
+  }, { passive:true });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && clock) clock.start();
+  });
+
+  mountSwatches();
+  mountReveals();
+  if (initializeScene()) animate();
+})();
+</script>
+</body>
+</html>
